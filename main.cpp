@@ -7,18 +7,22 @@ using namespace NTL;
 
 int main()
 {
-	Paillier_wt paillier_wt(128);											// key generation and distribution
+	Paillier_wt paillier_wt(128);														// key generation and distribution
 	
 	ZZ massage;
-	massage = 34614984;														// plaintext massage
+	massage = 34614984;																	// plaintext massage
 		
-    ZZ c = paillier_wt.encrypt(massage);									// ciphertext c = encryption(massage)
+    ZZ c = paillier_wt.encrypt(massage);												// ciphertext c = encryption(massage)
 	
-	ZZ c1 = paillier_wt.partial_decrypt(c, paillier_wt.f1);					// partial decryption, fi is the share of the secrey key
+	ZZ c1 = paillier_wt.partial_decrypt(c, paillier_wt.f1);								// partial decryption, fi is the share of the secrey key
 	ZZ c2 = paillier_wt.partial_decrypt(c, paillier_wt.f2);
 	ZZ c3 = paillier_wt.partial_decrypt(c, paillier_wt.f3);
 	
-	ZZ dec_c = paillier_wt.combine_partial_decrypt(c1, c2, c3);				// combine partial decryptions
+	bool ZKP_check = paillier_wt.ZKP_for_partial_decryption(c, c1, c2, c3);				// ZKP for partial decryption
+	if(ZKP_check){cout << "ZKP for partial decrpytion is successful" << endl;}
+	else{cout << "ZKP for partial decryption is failed" << endl;}
+	
+	ZZ dec_c = paillier_wt.combine_partial_decrypt(c1, c2, c3);							// combine partial decryptions
 	
 	if (dec_c == massage){
         cout << "Encryption and distributed decryption is successful" << endl;
