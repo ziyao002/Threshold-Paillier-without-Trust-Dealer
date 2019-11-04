@@ -14,7 +14,7 @@ int main()
 		
     ZZ c = paillier_wt.encrypt(massage);									// ciphertext c = encryption(massage)
 	
-	ZZ c1 = paillier_wt.partial_decrypt(c, paillier_wt.f1);					// partial decryption
+	ZZ c1 = paillier_wt.partial_decrypt(c, paillier_wt.f1);					// partial decryption, fi is the share of the secrey key
 	ZZ c2 = paillier_wt.partial_decrypt(c, paillier_wt.f2);
 	ZZ c3 = paillier_wt.partial_decrypt(c, paillier_wt.f3);
 	

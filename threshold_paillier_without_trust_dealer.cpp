@@ -226,6 +226,65 @@ NTL::ZZ Paillier_wt::distributed_RSA_modulus_generation(const long keyLength = 5
 	return N;
 }
 
+void Paillier_wt::Ri_sharing(NTL::ZZ& r1, NTL::ZZ& r2, NTL::ZZ& r3, NTL::ZZ& R1, NTL::ZZ& R2, NTL::ZZ& R3, NTL::ZZ& modulus) {
+	/* Secret sharing over integers
+     *
+     * Parameters
+     * ==========
+     * NTL::ZZ r1, r2, r3 : R = r1 + r2 + r3
+     *
+     * Returns
+     * =======
+     * NTL::ZZ R1, R2, R3: R can be reconstructed by Lagrange interpolation with R1, R2, R3
+     */			
+		NTL::ZZ r11, r12, r13, h11, h12, h13;
+		NTL::ZZ r21, r22, r23, h21, h22, h23;
+		NTL::ZZ r31, r32, r33, h31, h32, h33;
+		
+		NTL::ZZ a11, a21, a31;
+		NTL::ZZ c11, c12, c21, c22, c31, c32;
+		
+		a11 = RandomBnd(modulus);
+		c11 = RandomBnd(modulus);
+		c12 = RandomBnd(modulus);
+		r11 = (r1 + a11 * 1) ;
+		r12 = (r1 + a11 * 2) ;
+		r13 = (r1 + a11 * 3) ;
+		h11 = (c11 * 1 + c12 * 1 * 1) ;
+		h12 = (c11 * 2 + c12 * 2 * 2) ;
+		h13 = (c11 * 3 + c12 * 3 * 3) ;
+		
+		a21 = RandomBnd(modulus);
+		c21 = RandomBnd(modulus);
+		c22 = RandomBnd(modulus);
+		r21 = (r2 + a21 * 1) ;
+		r22 = (r2 + a21 * 2) ;
+		r23 = (r2 + a21 * 3) ;
+		h21 = (c21 * 1 + c22 * 1 * 1) ;
+		h22 = (c21 * 2 + c22 * 2 * 2) ;
+		h23 = (c21 * 3 + c22 * 3 * 3) ;
+		
+		a31 = RandomBnd(modulus);
+		c31 = RandomBnd(modulus);
+		c32 = RandomBnd(modulus);
+		r31 = (r3 + a31 * 1) ;
+		r32 = (r3 + a31 * 2) ;
+		r33 = (r3 + a31 * 3) ;
+		h31 = (c31 * 1 + c32 * 1 * 1) ;
+		h32 = (c31 * 2 + c32 * 2 * 2) ;
+		h33 = (c31 * 3 + c32 * 3 * 3) ;
+		
+		R1 = ((r11 + r21 + r31) + (h11 + h21 + h31)) ;
+		R2 = ((r12 + r22 + r32) + (h12 + h22 + h32)) ;
+		R3 = ((r13 + r23 + r33) + (h13 + h23 + h33)) ;
+		
+		/* NTL::ZZ L1, L2, L3;
+		L1 = (0 - 2) * (0 - 3) / ((1 - 2) * (1 - 3));									// Lagrange interpolation
+		L2 = (0 - 1) * (0 - 3) / ((2 - 1) * (2 - 3));
+		L3 = (0 - 1) * (0 - 2) / ((3 - 1) * (3 - 2));
+		R = (R1 * L1 + R2 * L2 + R3 * L3); */
+}
+
 Paillier_wt::Paillier_wt(const long keyLength = 512) {
 	/* Distributed Paillier parameters generation function withour trust dealer.
 	 *
@@ -234,35 +293,40 @@ Paillier_wt::Paillier_wt(const long keyLength = 512) {
      * long keyLength: the length of the key.
      * 
      * =======
-     * public key  = (modulus, generator, theta).
-	 * private key = delta * phi * beta.
+     * public key  = (N, generator, theta).
+	 * private key = - delta * phi * beta.
      */
 	
 	distributed_RSA_modulus_generation(keyLength);																// RSA modulus generation
 	generator = N + 1;																							// generator = n + 1
 	delta = 6;																									// 3 partirs = 3!
 	
-	NTL::ZZ K, beta1, beta2, beta3, r1, r2, r3;																	// parameters for secret-sharing secrect key over the integer
+	NTL::ZZ modulus_KN, modulus_KKN;
+	NTL::ZZ beta1, beta2, beta3, r1, r2, r3, r1_delta, r2_delta, r3_delta, R1_delta, R2_delta, R3_delta;		// parameters for secret-sharing secrect key over the integer
 	NTL::ZZ phi, theta1, theta2, theta3;
 	K = NTL::power(NTL::ZZ(2), 80);																				// the security parameter such that (2**K)**-1 is negligible
-	beta1 =  RandomBnd(K * N);
-	beta2 =  RandomBnd(K * N);
-	beta3 =  RandomBnd(K * N);
-	r1 = RandomBnd(K * K * N);
-	r2 = RandomBnd(K * K * N);
-	r3 = RandomBnd(K * K * N);
+	modulus_KN = K * N;
+	modulus_KKN = K* K * N;
+	beta1 =  RandomBnd(modulus_KN);
+	beta2 =  RandomBnd(modulus_KN);
+	beta3 =  RandomBnd(modulus_KN);
+	r1 = RandomBnd(modulus_KKN);
+	r2 = RandomBnd(modulus_KKN);
+	r3 = RandomBnd(modulus_KKN);
+	r1_delta = delta * r1;
+	r2_delta = delta * r2;
+	r3_delta = delta * r3;
 	
 	phi = N + 1 - (p1 + q1) - (p2 + q2) - (p3 + q3);
 	theta1 = delta * phi * beta1 + N * delta * r1;
 	theta2 = delta * phi * beta2 + N * delta * r2;
 	theta3 = delta * phi * beta3 + N * delta * r3;
-	theta = (theta1 + theta2 + theta3) % N;
+	theta = theta1 + theta2 + theta3;
 	
-	ak1 = RandomBnd(N);																							// parties agree on ak1 and ak2
-	ak2 = RandomBnd(N);
-	f1 = -(delta * phi * beta1 + delta * phi * beta2 + delta * phi * beta3 + ak1 * 1 + ak2 * 1 * 1);			// the secret key is shared over the integer
-	f2 = -(delta * phi * beta1 + delta * phi * beta2 + delta * phi * beta3 + ak1 * 2 + ak2 * 2 * 2);
-	f3 = -(delta * phi * beta1 + delta * phi * beta2 + delta * phi * beta3 + ak1 * 3 + ak2 * 3 * 3);
+	Ri_sharing(r1_delta, r2_delta, r3_delta, R1_delta, R2_delta, R3_delta, modulus_KKN);						 
+	f1 = (N * R1_delta - theta);																				// -beta*phi*delta is shared by f1, f2, f3
+	f2 = (N * R2_delta - theta);																				// -beta*phi*delta = L1 * f1 + L2 * f2 + L3 * f3
+	f3 = (N * R3_delta - theta);
 }
 
 NTL::ZZ Paillier_wt::encrypt(NTL::ZZ& message){
@@ -277,6 +341,7 @@ NTL::ZZ Paillier_wt::encrypt(NTL::ZZ& message){
      * NTL:ZZ ciphertext : the encyrpted message.
      */
     NTL::ZZ random = Gen_Coprime(N);
+    random = 200;
     NTL::ZZ ciphertext = NTL::PowerMod(generator, message, N * N) * NTL::PowerMod(random, N, N * N);
     return ciphertext % (N * N);
 }
@@ -309,17 +374,17 @@ NTL::ZZ Paillier_wt::combine_partial_decrypt(NTL::ZZ& c1, NTL::ZZ& c2, NTL::ZZ& 
      * NTL::ZZ M: the decryption of the original message.
      */
 	NTL::ZZ lamda1, lamda2, lamda3;		// parameters for 3-party Paillier
-	lamda1= 3;
-	lamda2 = -3;
-	lamda3 = 1;
+	lamda1= NTL::ZZ(3);
+	lamda2 = NTL::ZZ(-3);
+	lamda3 = NTL::ZZ(1);
 	NTL::ZZ u1 = delta * lamda1;
 	NTL::ZZ u2 = delta * lamda2;
 	NTL::ZZ u3 = delta * lamda3;
 
-    NTL::ZZ product_1 = NTL::PowerMod(c1, 2 * u1, N * N);
-    NTL::ZZ product_2 = NTL::PowerMod(c2, 2 * u2, N * N);
-    NTL::ZZ product_3 = NTL::PowerMod(c3, 2 * u3, N * N);
-    NTL::ZZ product = NTL::MulMod(NTL::MulMod(product_1, product_2, N * N), product_3, N * N);
+    NTL::ZZ product_1 = NTL::PowerMod(c1, 2 * delta * NTL::ZZ(3), N * N);
+    NTL::ZZ product_2 = NTL::PowerMod(c2, 2 * delta * NTL::ZZ(-3), N * N);
+    NTL::ZZ product_3 = NTL::PowerMod(c3, 2 * delta * NTL::ZZ(1), N * N);
+    NTL::ZZ product = product_1 * product_2 * product_3 % (N*N);
 	NTL::ZZ Inv_temp = NTL::InvMod(-4 * delta * delta * theta % N, N);
 	NTL::ZZ M = NTL::MulMod(L_function(product), Inv_temp, N);
 
